@@ -176,7 +176,12 @@ build $image="bluefin" $tag="latest" $flavor="main" rechunk="0" ghcr="0" pipelin
     else
         ver="${tag}-${fedora_version}.$(date +%Y%m%d)"
     fi
-    skopeo list-tags docker://ghcr.io/{{ repo_organization }}/${image_name} > /tmp/repotags.json
+    # Fork: dedup against the registry we push to (IMAGE_REGISTRY in CI); the
+    # package may not exist yet on the first build, so fall back to no tags.
+    registry="${IMAGE_REGISTRY:-ghcr.io/{{ repo_organization }}}"
+    if ! skopeo list-tags "docker://${registry}/${image_name}" > /tmp/repotags.json 2>/dev/null; then
+        echo '{"Tags": []}' > /tmp/repotags.json
+    fi
     if [[ $(jq "any(.Tags[]; contains(\"$ver\"))" < /tmp/repotags.json) == "true" ]]; then
         POINT="1"
         while $(jq -e "any(.Tags[]; contains(\"$ver.$POINT\"))" < /tmp/repotags.json)
