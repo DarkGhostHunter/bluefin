@@ -34,7 +34,10 @@ jobs:
       # Fork: stable is pinned to pair with the akmods-nvidia-lts (NVIDIA 580.x LTS
       # driver) and akmods main-45 artifacts. Before bumping, confirm the matching
       # ghcr.io tags akmods:main-45-<kernel> and akmods-nvidia-lts:main-45-<kernel> exist.
-      kernel_pin: 7.3.3-300.fc45
+      # The pin must be the full `uname -r` release (with arch suffix, as in the
+      # akmods image ostree.linux label) because it becomes the ostree.linux label
+      # and the /usr/lib/modules/<release> path used by the secureboot check.
+      kernel_pin: 7.3.3-300.fc45.x86_64
       image_flavors: '["main", "nvidia-lts"]'
       brand_name: ${{ matrix.brand_name }}
       stream_name: stable
