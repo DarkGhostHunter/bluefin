@@ -31,8 +31,11 @@ jobs:
       matrix:
         brand_name: ["bluefin"]
     with:
-      # Pin stable to a kernel if needed, like for ZFS compatibility
-      # kernel_pin: 7.0.12-201.fc44.x86_64
+      # Fork: stable is pinned to pair with the akmods-nvidia-lts (NVIDIA 580.x LTS
+      # driver) and akmods main-45 artifacts. Before bumping, confirm the matching
+      # ghcr.io tags akmods:main-45-<kernel> and akmods-nvidia-lts:main-45-<kernel> exist.
+      kernel_pin: 7.3.3-300.fc45
+      image_flavors: '["main", "nvidia-lts"]'
       brand_name: ${{ matrix.brand_name }}
       stream_name: stable
 

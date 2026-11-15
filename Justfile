@@ -9,6 +9,7 @@ images := '(
 flavors := '(
     [main]=main
     [nvidia-open]=nvidia-open
+    [nvidia-lts]=nvidia-lts
 )'
 tags := '(
     [stable]=stable
@@ -121,7 +122,10 @@ build $image="bluefin" $tag="latest" $flavor="main" rechunk="0" ghcr="0" pipelin
     if [[ "${flavor}" =~ hwe ]]; then
         akmods_flavor="bazzite"
     elif [[ "${tag}" =~ stable ]]; then
-        akmods_flavor="coreos-stable"
+        # Fork: stable builds on the main akmods line (Fedora 45 + kernel pin) because
+        # coreos-stable has no Fedora 45 7.3.x artifacts; ZFS only exists for coreos
+        # flavors and is therefore not shipped.
+        akmods_flavor="main"
     else
         akmods_flavor="main"
     fi
@@ -157,7 +161,9 @@ build $image="bluefin" $tag="latest" $flavor="main" rechunk="0" ghcr="0" pipelin
     if [[ "${akmods_flavor}" =~ coreos ]]; then
         {{ just }} verify-container "akmods-zfs:${akmods_flavor}-${fedora_version}-${kernel_release}"
     fi
-    if [[ "${flavor}" =~ nvidia-open ]]; then
+    if [[ "${flavor}" =~ nvidia-lts ]]; then
+        {{ just }} verify-container "akmods-nvidia-lts:${akmods_flavor}-${fedora_version}-${kernel_release}"
+    elif [[ "${flavor}" =~ nvidia-open ]]; then
         {{ just }} verify-container "akmods-nvidia-open:${akmods_flavor}-${fedora_version}-${kernel_release}"
     fi
 
@@ -637,11 +643,11 @@ generate-build-tags image="bluefin" tag="latest" flavor="main" kernel_pin="" ghc
     # Weekly Stable / Rebuild Stable on workflow_dispatch
     github_event="{{ github_event }}"
     if [[ "{{ tag }}" =~ "stable" && "${WEEKLY}" == "${TODAY}" && "${github_event}" =~ schedule ]]; then
-        BUILD_TAGS+=("stable" "stable-${version}" "stable-${version:3}" "gts" "gts-${version}" "gts-${version:3}")
+        BUILD_TAGS+=("stable" "stable-${version}" "stable-${version:3}")
     elif [[ "{{ tag }}" =~ "stable" && "${github_event}" =~ workflow_dispatch|workflow_call ]]; then
-        BUILD_TAGS+=("stable" "stable-${version}" "stable-${version:3}" "gts" "gts-${version}" "gts-${version:3}")
+        BUILD_TAGS+=("stable" "stable-${version}" "stable-${version:3}")
     elif [[ "{{ tag }}" =~ "stable" && "{{ ghcr }}" == "0" ]]; then
-        BUILD_TAGS+=("stable" "stable-${version}" "stable-${version:3}" "gts" "gts-${version}" "gts-${version:3}")
+        BUILD_TAGS+=("stable" "stable-${version}" "stable-${version:3}")
     elif [[ ! "{{ tag }}" =~ stable ]]; then
         BUILD_TAGS+=("${FEDORA_VERSION}" "${FEDORA_VERSION}-${version}" "${FEDORA_VERSION}-${version:3}")
     fi
@@ -742,11 +748,11 @@ setup-cache $image="bluefin" $tag="latest" $ghcr="0" $github_event="0":
     echo "${CACHE_NAME}" "${ALLOW_CACHE_WRITE}"
 
 # Examples:
-#   > just retag-nvidia-on-ghcr stable-daily stable-daily-41.20250126.3 0
-#   > just retag-nvidia-on-ghcr latest latest-41.20250228.1 0
+#   > just retag-nvidia-on-ghcr stable stable-41.20250126.3 0
+#   > just retag-nvidia-on-ghcr stable stable-41.20250228.1 0
 #
-# working_tag: The tag of the most recent known good image (e.g., stable-daily-41.20250126.3)
-# stream:      One of latest, stable-daily, or stable
+# working_tag: The tag of the most recent known good image (e.g., stable-41.20250126.3)
+# stream:      One of stable-daily or stable
 # dry_run:     Only print the skopeo commands instead of running them
 #
 # First generate a PAT with package write access (https://github.com/settings/tokens)
@@ -762,6 +768,6 @@ retag-nvidia-on-ghcr working_tag="" stream="" dry_run="1":
         echo "$GITHUB_PAT" | podman login -u $GITHUB_USERNAME --password-stdin ghcr.io
         skopeo="skopeo"
     fi
-    for image in bluefin-nvidia-open bluefin-dx-nvidia-open; do
+    for image in bluefin-nvidia-lts bluefin-dx-nvidia-lts; do
       $skopeo copy docker://ghcr.io/ublue-os/${image}:{{ working_tag }} docker://ghcr.io/ublue-os/${image}:{{ stream }}
     done

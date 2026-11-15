@@ -8,17 +8,17 @@ from typing import Any
 import re
 from collections import defaultdict
 
-REGISTRY = "ghcr.io/ublue-os/"
+REGISTRY = "ghcr.io/darkghosthunter/"
 
 IMAGE_MATRIX_LATEST = {
     "experience": ["base", "dx"],
     "de": ["gnome"],
-    "image_flavor": ["main", "nvidia-open"],
+    "image_flavor": ["main", "nvidia-lts"],
 }
 IMAGE_MATRIX = {
     "experience": ["base", "dx"],
     "de": ["gnome"],
-    "image_flavor": ["main", "nvidia-open"],
+    "image_flavor": ["main", "nvidia-lts"],
 }
 
 RETRIES = 3
@@ -37,7 +37,7 @@ OTHER_NAMES = {
     "base": "### Base Images\n| | Name | Previous | New |\n| --- | --- | --- | --- |{changes}\n\n",
     "dx": "### [Dev Experience Images](https://docs.projectbluefin.io/bluefin-dx)\n| | Name | Previous | New |\n| --- | --- | --- | --- |{changes}\n\n",
     "gnome": "### [Bluefin Images](https://projectbluefin.io/)\n| | Name | Previous | New |\n| --- | --- | --- | --- |{changes}\n\n",
-    "nvidia-open": "### Nvidia Images\n| | Name | Previous | New |\n| --- | --- | --- | --- |{changes}\n\n",
+    "nvidia-lts": "### Nvidia Images\n| | Name | Previous | New |\n| --- | --- | --- | --- |{changes}\n\n",
 }
 
 COMMITS_FORMAT = "### Commits\n| Hash | Subject | Author |\n| --- | --- | --- |{commits}\n\n"
@@ -317,7 +317,7 @@ def get_package_groups(target: str, prev_tag: str, curr_tag: str):
             if img not in pkg:
                 continue
 
-            if t == "nvidia-open" and "nvidia-open" not in image_flavor:
+            if t == "nvidia-lts" and "nvidia-lts" not in image_flavor:
                 continue
             if t == "gnome" and de != "gnome":
                 continue
